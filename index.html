@@ -43,6 +43,7 @@
             width: 100%;
             max-width: 900px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative; /* For positioning the save notification */
         }
 
         h1, h2, h3 {
@@ -99,7 +100,6 @@
             background-color: transparent; /* Empty by default */
         }
 
-        /* NEW: Emphasized dot style for the first skill point */
         .emphasized-dot {
             border-width: 2px;
             box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
@@ -166,37 +166,41 @@
 
         #dice-results { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 1.5em; }
         
-        /* NEW: Animation for dice appearing */
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .die {
             width: 40px; height: 40px;
-            border: 2px solid var(--text-color);
-            border-radius: 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            transform: scale(0); /* Start hidden for animation */
-            opacity: 0;
+            border: 2px solid var(--text-color); border-radius: 5px;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; transform: scale(0); opacity: 0;
         }
-
-        .die-animated {
-            animation: popIn 0.3s ease-out forwards;
-        }
+        .die-animated { animation: popIn 0.3s ease-out forwards; }
         
         .highest-die { background-color: var(--highlight-color); color: #000; border-color: var(--highlight-color); }
         .lowest-die { background-color: var(--recovery-color); color: #000; border-color: var(--recovery-color); }
         .crit-message { font-family: var(--header-font); color: var(--stress-color); font-weight: bold; text-shadow: 0 0 5px var(--stress-color); animation: popIn 0.3s ease-out forwards; }
 
+        /* --- SAVE NOTIFICATION & CLEAR BUTTON --- */
+        #save-notification {
+            position: absolute; top: 15px; right: 15px;
+            background-color: var(--highlight-color); color: #000;
+            padding: 5px 10px; border-radius: 5px;
+            opacity: 0; transition: opacity 0.5s ease-in-out;
+            pointer-events: none;
+        }
+        #save-notification.show { opacity: 1; }
+        #clear-storage-btn {
+            position: absolute; top: 10px; left: 15px;
+            font-family: var(--body-font); font-size: 0.8em;
+            background-color: #7f3232; color: white;
+            border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <div class="character-sheet">
+    <div class="character-sheet" id="character-sheet">
+        <div id="save-notification">Saved!</div>
+        <button id="clear-storage-btn" onclick="clearSheetData()">Clear All Data</button>
         <h1>Girl by Moonlight</h1>
 
         <div class="grid-container">
@@ -234,8 +238,8 @@
             </section>
             
             <aside style="grid-column: 3 / 4; display: flex; flex-direction: column; gap: 15px;">
-                 <div class="tracker-item"><span>Transcendent</span><label class="toggle-switch"><input type="checkbox"><span class="slider"></span></label></div>
-                <div class="tracker-item"><span>Eclipse</span><label class="toggle-switch"><input type="checkbox" class="eclipse-toggle"><span class="slider"></span></label></div>
+                 <div class="tracker-item"><span>Transcendent</span><label class="toggle-switch"><input type="checkbox" id="transcendent-toggle"><span class="slider"></span></label></div>
+                <div class="tracker-item"><span>Eclipse</span><label class="toggle-switch"><input type="checkbox" id="eclipse-toggle" class="eclipse-toggle"><span class="slider"></span></label></div>
                 <div class="tracker-item"><span>Armour</span><div class="dot-container"><input type="checkbox" id="armor1" class="armor-dot"><label for="armor1" class="dot"></label></div></div>
                  <div class="tracker-item"><span>Special</span><div class="dot-container"><input type="checkbox" id="special1" class="special-dot"><label for="special1" class="dot"></label></div></div>
             </aside>
@@ -243,38 +247,38 @@
             <!-- HARM -->
             <section class="harm-section"><h2>Harm</h2>
                 <div class="harm-row">
-                    <div class="fields"><input type="text" placeholder="Harm 1"><input type="text" placeholder="Harm 2"></div><div class="label">less effect</div>
+                    <div class="fields"><input type="text" id="harm1-1" placeholder="Harm 1"><input type="text" id="harm1-2" placeholder="Harm 2"></div><div class="label">less effect</div>
                 </div>
                 <div class="harm-row">
-                    <div class="fields"><input type="text" placeholder="Harm 1"><input type="text" placeholder="Harm 2"></div><div class="label">-1d</div>
+                    <div class="fields"><input type="text" id="harm2-1" placeholder="Harm 1"><input type="text" id="harm2-2" placeholder="Harm 2"></div><div class="label">-1d</div>
                 </div>
                 <div class="harm-row">
-                    <div class="fields"><input type="text" placeholder="Harm 1"></div><div class="label">need help</div>
+                    <div class="fields"><input type="text" id="harm3-1" placeholder="Harm 1"></div><div class="label">need help</div>
                 </div>
             </section>
 
             <!-- LINKS -->
             <section class="links-section"><h2>Links</h2>
                 <div class="link-row">
-                    <input type="text" placeholder="Link with...">
+                    <input type="text" id="link-name-1" placeholder="Link with...">
                     <div class="dot-container">
                         <input type="checkbox" id="l1_1" class="link-dot"><label for="l1_1" class="dot"></label><input type="checkbox" id="l1_2" class="link-dot"><label for="l1_2" class="dot"></label><input type="checkbox" id="l1_3" class="link-dot"><label for="l1_3" class="dot"></label><input type="checkbox" id="l1_4" class="link-dot"><label for="l1_4" class="dot"></label><input type="checkbox" id="l1_5" class="link-dot"><label for="l1_5" class="dot"></label><input type="checkbox" id="l1_6" class="link-dot"><label for="l1_6" class="dot"></label>
                     </div>
                 </div>
                 <div class="link-row">
-                    <input type="text" placeholder="Link with...">
+                    <input type="text" id="link-name-2" placeholder="Link with...">
                     <div class="dot-container">
                         <input type="checkbox" id="l2_1" class="link-dot"><label for="l2_1" class="dot"></label><input type="checkbox" id="l2_2" class="link-dot"><label for="l2_2" class="dot"></label><input type="checkbox" id="l2_3" class="link-dot"><label for="l2_3" class="dot"></label><input type="checkbox" id="l2_4" class="link-dot"><label for="l2_4" class="dot"></label><input type="checkbox" id="l2_5" class="link-dot"><label for="l2_5" class="dot"></label><input type="checkbox" id="l2_6" class="link-dot"><label for="l2_6" class="dot"></label>
                     </div>
                 </div>
                 <div class="link-row">
-                    <input type="text" placeholder="Link with...">
+                    <input type="text" id="link-name-3" placeholder="Link with...">
                     <div class="dot-container">
                         <input type="checkbox" id="l3_1" class="link-dot"><label for="l3_1" class="dot"></label><input type="checkbox" id="l3_2" class="link-dot"><label for="l3_2" class="dot"></label><input type="checkbox" id="l3_3" class="link-dot"><label for="l3_3" class="dot"></label><input type="checkbox" id="l3_4" class="link-dot"><label for="l3_4" class="dot"></label><input type="checkbox" id="l3_5" class="link-dot"><label for="l3_5" class="dot"></label><input type="checkbox" id="l3_6" class="link-dot"><label for="l3_6" class="dot"></label>
                     </div>
                 </div>
                 <div class="link-row">
-                    <input type="text" placeholder="Link with...">
+                    <input type="text" id="link-name-4" placeholder="Link with...">
                     <div class="dot-container">
                         <input type="checkbox" id="l4_1" class="link-dot"><label for="l4_1" class="dot"></label><input type="checkbox" id="l4_2" class="link-dot"><label for="l4_2" class="dot"></label><input type="checkbox" id="l4_3" class="link-dot"><label for="l4_3" class="dot"></label><input type="checkbox" id="l4_4" class="link-dot"><label for="l4_4" class="dot"></label><input type="checkbox" id="l4_5" class="link-dot"><label for="l4_5" class="dot"></label><input type="checkbox" id="l4_6" class="link-dot"><label for="l4_6" class="dot"></label>
                     </div>
@@ -336,13 +340,73 @@
             <!-- NOTES -->
             <section class="notes-section">
                 <h2>Notes</h2>
-                <textarea placeholder="Your notes, abilities, and other details..."></textarea>
+                <textarea id="notes" placeholder="Your notes, abilities, and other details..."></textarea>
             </section>
 
         </div>
     </div>
 
     <script>
+        const sheet = document.getElementById('character-sheet');
+        const saveNotification = document.getElementById('save-notification');
+        const storageKey = 'girlByMoonlightSheetData';
+        let saveTimeout;
+
+        // --- DATA PERSISTENCE ---
+
+        function saveState() {
+            const data = {};
+            const fields = sheet.querySelectorAll('input[type="text"], textarea, input[type="checkbox"]');
+            
+            fields.forEach(field => {
+                if (field.id) {
+                    data[field.id] = field.type === 'checkbox' ? field.checked : field.value;
+                }
+            });
+
+            localStorage.setItem(storageKey, JSON.stringify(data));
+            
+            // Show save notification
+            saveNotification.classList.add('show');
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveNotification.classList.remove('show');
+            }, 1500);
+        }
+
+        function loadState() {
+            const savedData = localStorage.getItem(storageKey);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                for (const id in data) {
+                    const field = document.getElementById(id);
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            field.checked = data[id];
+                        } else {
+                            field.value = data[id];
+                        }
+                    }
+                }
+            }
+        }
+        
+        function clearSheetData() {
+            if (confirm("Are you sure you want to clear all data? This cannot be undone.")) {
+                localStorage.removeItem(storageKey);
+                location.reload();
+            }
+        }
+
+        // Event listeners for saving data
+        sheet.addEventListener('input', saveState);
+        sheet.addEventListener('change', saveState); // for checkboxes
+
+        // Load data when the page loads
+        document.addEventListener('DOMContentLoaded', loadState);
+        
+        // --- DICE ROLLER ---
+
         function rollDice(numDice) {
             const resultsContainer = document.getElementById('dice-results');
             resultsContainer.innerHTML = ''; // Clear previous results
